@@ -91,6 +91,11 @@ class ApplicationController extends Controller
         $items = $paginator->getCollection()->map(function (Application $app) {
             return [
                 'id' => $app->id,
+                'candidate' => [
+                    'id' => $app->candidate->id,
+                    'name' => $app->candidate->name,
+                    'email' => $app->candidate->email,
+                ],
                 'job' => [
                     'id' => $app->job->id,
                     'title' => $app->job->title,
@@ -132,6 +137,11 @@ class ApplicationController extends Controller
         $items = $paginator->getCollection()->map(function (Application $app) {
             return [
                 'id' => $app->id,
+                'candidate' => [
+                    'id' => $app->candidate->id,
+                    'name' => $app->candidate->name,
+                    'email' => $app->candidate->email,
+                ],
                 'job' => [
                     'id' => $app->job->id,
                     'title' => $app->job->title,

@@ -1,0 +1,51 @@
+# ========= 1) Build Stage =========
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Avoid telemetry & ensure reproducible installs
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV CI=1
+
+# Install dependencies
+COPY package.json package-lock.json* yarn.lock* pnpm-lock.yaml* ./
+# Prefer npm ci if lock present
+RUN \
+  if [ -f package-lock.json ]; then npm ci; \
+  elif [ -f pnpm-lock.yaml ]; then corepack enable && pnpm i --frozen-lockfile; \
+  elif [ -f yarn.lock ]; then corepack enable && yarn --frozen-lockfile; \
+  else npm i; fi
+
+# Copy source
+COPY . .
+
+# Build Next.js (standalone output contains its own minimal Node server)
+RUN npm run build
+
+# ========= 2) Runtime Stage =========
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+# You'll set this at runtime; leaving a sensible default here:
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+# (Optional) If you want to set your API base URL at runtime:
+# ENV NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
+
+# Create non-root user
+RUN addgroup -S nextjs && adduser -S nextjs -G nextjs
+
+# Copy standalone server and assets from builder
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
+# Ensure correct ownership
+RUN chown -R nextjs:nextjs /app
+USER nextjs
+
+EXPOSE 3000
+CMD ["node", "server.js"]
