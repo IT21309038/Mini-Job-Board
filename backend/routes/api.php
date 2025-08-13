@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\EmployerJobController;
 use App\Http\Controllers\Api\V1\PublicJobController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
@@ -13,7 +14,7 @@ Route::get('/user', function (Request $request) {
 
 Route::prefix('v1')->group(function () {
     Route::post('auth/register', [AuthController::class, 'register']);
-    Route::post('auth/login', [AuthController::class, 'login']);
+    Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:20,1');
     Route::post('auth/refresh', [AuthController::class, 'refresh']);
     Route::post('auth/logout', [AuthController::class, 'logout']);
 
@@ -38,7 +39,7 @@ Route::prefix('v1')->group(function () {
 
 Route::prefix('v1')->middleware(['auth:api'])->group(function () {
     // Candidate
-    Route::post('candidate/applications', [ApplicationController::class, 'store']);
+    Route::post('candidate/applications', [ApplicationController::class, 'store'])->middleware('throttle:10,1');
     Route::get('candidate/applications', [ApplicationController::class, 'indexForCandidate']);
 
     // Employer
@@ -49,4 +50,18 @@ Route::prefix('v1')->middleware(['auth:api'])->group(function () {
     Route::get('applications/{application}/resume', [ApplicationController::class, 'downloadResume'])
         ->name('applications.resume.download')
         ->middleware('signed');
+});
+
+// Smoke test email
+Route::get('v1/debug/mail', function () {
+    try {
+        $to = env('MAIL_DEBUG_TO');
+        Mail::raw('Mini Job Board mail test ✔', function ($m) use ($to) {
+            $m->to($to)->subject('Mail OK');
+        });
+
+        return response()->json(['ok' => true]);
+    } catch (\Throwable $e) {
+        return response()->json(['ok' => false, 'err' => $e->getMessage()], 500);
+    }
 });
