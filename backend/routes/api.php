@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\ApplicationController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\EmployerJobController;
 use App\Http\Controllers\Api\V1\PublicJobController;
@@ -33,4 +34,19 @@ Route::prefix('v1')->group(function () {
         Route::put('employer/jobs/{jobPost}', [EmployerJobController::class, 'update']);
         Route::delete('employer/jobs/{jobPost}', [EmployerJobController::class, 'destroy']);
     });
+});
+
+Route::prefix('v1')->middleware(['auth:api'])->group(function () {
+    // Candidate
+    Route::post('candidate/applications', [ApplicationController::class, 'store']);
+    Route::get('candidate/applications', [ApplicationController::class, 'indexForCandidate']);
+
+    // Employer
+    Route::get('employer/jobs/{jobPost}/applications', [ApplicationController::class, 'indexForEmployer'])
+        ->middleware('can:viewApplicants,jobPost');
+
+    // Private resume download (signed + policy)
+    Route::get('applications/{application}/resume', [ApplicationController::class, 'downloadResume'])
+        ->name('applications.resume.download')
+        ->middleware('signed');
 });
