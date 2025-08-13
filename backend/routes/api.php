@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\EmployerJobController;
+use App\Http\Controllers\Api\V1\PublicJobController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -19,6 +21,16 @@ Route::prefix('v1')->group(function () {
     });
 });
 
-Route::get('v1/debug/cookies', function (Request $r) {
-    return response()->json($r->cookies->all());
+Route::prefix('v1')->group(function () {
+    // Public browse
+    Route::get('jobs', [PublicJobController::class, 'index']);
+    Route::get('jobs/{jobPost}', [PublicJobController::class, 'show']);
+
+    // Employer-auth routes
+    Route::middleware(['auth:api'])->group(function () {
+        Route::get('employer/jobs', [EmployerJobController::class, 'index']);
+        Route::post('employer/jobs', [EmployerJobController::class, 'store']);
+        Route::put('employer/jobs/{jobPost}', [EmployerJobController::class, 'update']);
+        Route::delete('employer/jobs/{jobPost}', [EmployerJobController::class, 'destroy']);
+    });
 });

@@ -11,7 +11,7 @@ class AuthService
 {
     public function attemptLogin(string $email, string $password): ?string
     {
-        //Returns JWT Token or null
+        // Returns JWT Token or null
         return auth('api')->attempt(['email' => $email, 'password' => $password]);
     }
 
@@ -41,14 +41,14 @@ class AuthService
             ->where('expires_at', '>', now())
             ->first();
 
-        if(!$current) {
+        if (! $current) {
             return null; // No valid refresh token found
         }
 
-        //rework current
+        // rework current
         $current->update(['revoked_at' => now()]);
 
-        //issue new token
+        // issue new token
         $raw = Str::random(64);
         $newHash = hash('sha256', $raw);
 
@@ -72,7 +72,8 @@ class AuthService
             ->update(['revoked_at' => now()]);
     }
 
-    public function cookie(string $name, string $value, int $minutes, bool $httpOnly = true){
+    public function cookie(string $name, string $value, int $minutes, bool $httpOnly = true)
+    {
 
         $domain = config('session.domain', env('COOKIE_DOMAIN', null));
         $secure = (bool) env('COOKIE_SECURE', false);

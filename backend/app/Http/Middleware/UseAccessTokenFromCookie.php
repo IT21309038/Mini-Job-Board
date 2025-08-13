@@ -9,12 +9,13 @@ class UseAccessTokenFromCookie
 {
     public function handle(Request $request, Closure $next)
     {
-        if(!$request->bearerToken()) {
+        if (! $request->bearerToken()) {
             $token = $request->cookie('access_token');
             if ($token) {
-                $request->headers->set('Authorization', 'Bearer ' . $token);
+                $request->headers->set('Authorization', 'Bearer '.$token);
             }
         }
+
         return $next($request);
     }
 }

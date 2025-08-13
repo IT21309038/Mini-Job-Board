@@ -15,16 +15,16 @@ class AuthController extends Controller
 {
     use ApiResponser;
 
-    public function __construct(private readonly AuthService $auth){}
+    public function __construct(private readonly AuthService $auth) {}
 
-    //User Registration
+    // User Registration
     public function register(RegisterRequest $request)
     {
         $user = User::create($request->validated());
 
-        //Auto login
+        // Auto login
         $token = $this->auth->attemptLogin($user->email, $request->input('password'));
-        if (!$token) {
+        if (! $token) {
             return $this->errorResponse('Registration successful, but login failed.', code: 201);
         }
 
@@ -32,24 +32,24 @@ class AuthController extends Controller
 
         return $this->successResponse([
             'user' => [
-                'id'=> $user->id,
-                'name'=> $user->name,
-                'email'=> $user->email,
-                'role'=> $user->role,
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
             ],
             'token' => $token,
             'refresh' => $refresh['raw'],
         ], 'Registration successful.', 201)
-        ->cookie($this->auth->cookie('access_token', $token, (int)config('jwt.ttl')))
-        ->cookie($this->auth->cookie('refresh_token', $refresh['raw'], 60 * 24 * 14));
+            ->cookie($this->auth->cookie('access_token', $token, (int) config('jwt.ttl')))
+            ->cookie($this->auth->cookie('refresh_token', $refresh['raw'], 60 * 24 * 14));
     }
 
-    //User Login
+    // User Login
     public function login(LoginRequest $request)
     {
         $token = $this->auth->attemptLogin($request->email, $request->password);
 
-        if(!$token) {
+        if (! $token) {
             return $this->errorResponse('Invalid credentials.', 401);
         }
 
@@ -58,16 +58,16 @@ class AuthController extends Controller
 
         return $this->successResponse([
             'user' => [
-                'id'=> $user->id,
-                'name'=> $user->name,
-                'email'=> $user->email,
-                'role'=> $user->role,
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
             ],
             'token' => $token,
             'refresh' => $refresh['raw'],
         ], 'Login successful.', 200)
-        ->cookie($this->auth->cookie('access_token', $token, (int)config('jwt.ttl')))
-        ->cookie($this->auth->cookie('refresh_token', $refresh['raw'], 60 * 24 * 14));
+            ->cookie($this->auth->cookie('access_token', $token, (int) config('jwt.ttl')))
+            ->cookie($this->auth->cookie('refresh_token', $refresh['raw'], 60 * 24 * 14));
     }
 
     public function me(Request $request)
@@ -91,24 +91,24 @@ class AuthController extends Controller
     {
         $rawFresh = $request->cookie('refresh_token');
 
-        if (!$rawFresh) {
+        if (! $rawFresh) {
             $rawFresh = $request->header('X-Refresh-Token') ?? $request->input('refresh_token');
         }
 
-        if(!$rawFresh) {
+        if (! $rawFresh) {
             return $this->errorResponse('Refresh token not provided.', 401);
         }
 
-        //Refresh token rotate
+        // Refresh token rotate
         $rotated = $this->auth->rotateRefreshToken($rawFresh, $request);
 
-        if (!$rotated) {
+        if (! $rotated) {
             return $this->errorResponse('Invalid or expired refresh token.', 401);
         }
 
-        //Invalidate old token before creating new
-        try{
-            if(JWTAuth::getToken()) {
+        // Invalidate old token before creating new
+        try {
+            if (JWTAuth::getToken()) {
                 JWTAuth::invalidate(true);
             }
         } catch (\Throwable $e) {
@@ -119,8 +119,8 @@ class AuthController extends Controller
         $newAccess = JWTAuth::fromUser($user);
 
         return $this->successResponse([], 'Tokens refreshed successfully.')
-        ->cookie($this->auth->cookie('access_token', $newAccess, (int)config('jwt.ttl')))
-        ->cookie($this->auth->cookie('refresh_token', $rotated['raw'], 60 * 24 * 14));
+            ->cookie($this->auth->cookie('access_token', $newAccess, (int) config('jwt.ttl')))
+            ->cookie($this->auth->cookie('refresh_token', $rotated['raw'], 60 * 24 * 14));
     }
 
     public function logout(Request $request)
@@ -140,7 +140,7 @@ class AuthController extends Controller
         }
 
         return $this->successResponse([], 'Logged out successfully.')
-        ->cookie($this->auth->cookie('access_token', '', -1))
-        ->cookie($this->auth->cookie('refresh_token', '', -1));
+            ->cookie($this->auth->cookie('access_token', '', -1))
+            ->cookie($this->auth->cookie('refresh_token', '', -1));
     }
 }

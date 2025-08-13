@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Middleware\UseAccessTokenFromCookie;
-use GuzzleHttp\Promise\Create;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -21,7 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
-            'access.cookie' => UseAccessTokenFromCookie::class
+            'access.cookie' => UseAccessTokenFromCookie::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
