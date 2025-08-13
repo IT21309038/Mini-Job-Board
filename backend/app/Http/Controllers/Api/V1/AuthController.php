@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
-use App\Http\Traits\ApiResponser;
 use App\Models\User;
 use App\Services\AuthService;
 use Illuminate\Http\Request;
@@ -13,8 +12,6 @@ use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
-    use ApiResponser;
-
     public function __construct(private readonly AuthService $auth) {}
 
     // User Registration
@@ -25,7 +22,7 @@ class AuthController extends Controller
         // Auto login
         $token = $this->auth->attemptLogin($user->email, $request->input('password'));
         if (! $token) {
-            return $this->errorResponse('Registration successful, but login failed.', code: 201);
+            return $this->errorResponse('Registration successful, but login failed.', 201);
         }
 
         $refresh = $this->auth->issueRefreshToken($user, $request);

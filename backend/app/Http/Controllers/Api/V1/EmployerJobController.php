@@ -6,14 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Job\JobStoreRequest;
 use App\Http\Requests\Job\JobUpdateRequest;
 use App\Http\Resources\JobPostResource;
-use App\Http\Traits\ApiResponser;
 use App\Models\JobPost;
 use Illuminate\Http\Request;
 
 class EmployerJobController extends Controller
 {
-    use ApiResponser;
-
     // List employer posted jobs
     public function index(Request $request)
     {

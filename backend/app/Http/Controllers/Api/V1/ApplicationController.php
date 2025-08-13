@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Application\ApplicationStoreRequest;
-use App\Http\Traits\ApiResponser;
 use App\Mail\ApplicationSubmitted;
 use App\Models\Application;
 use App\Models\JobPost;
@@ -15,8 +14,6 @@ use Illuminate\Support\Facades\URL;
 
 class ApplicationController extends Controller
 {
-    use ApiResponser;
-
     // Candidate Job apply
     public function store(ApplicationStoreRequest $request)
     {

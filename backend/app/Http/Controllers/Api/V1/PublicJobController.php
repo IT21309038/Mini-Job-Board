@@ -4,14 +4,11 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\JobPostResource;
-use App\Http\Traits\ApiResponser;
 use App\Models\JobPost;
 use Illuminate\Http\Request;
 
 class PublicJobController extends Controller
 {
-    use ApiResponser;
-
     // Job posts get paginated with filters
     public function index(Request $request)
     {
@@ -72,7 +69,7 @@ class PublicJobController extends Controller
         $jobPost->load('employer:id,name');
 
         return $this->successResponse(
-            new JobPostResource($jobPost),
+            [new JobPostResource($jobPost)],
             'Job post retrieved successfully.',
             200
         );
