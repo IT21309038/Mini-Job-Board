@@ -1,0 +1,89 @@
+# ========= 1) Composer deps =========
+FROM composer:2 AS vendor
+
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --prefer-dist --no-progress --no-interaction
+
+# ========= 2) App Image (PHP-FPM + Nginx) =========
+FROM php:8.3-fpm-bookworm
+
+# Update system packages to address vulnerabilities
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
+    nginx supervisor unzip git libzip-dev libpng-dev libonig-dev libicu-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# PHP extensions (typical for Laravel)
+RUN docker-php-ext-configure intl \
+ && docker-php-ext-install -j$(nproc) pdo_mysql bcmath zip intl \
+ && docker-php-ext-enable opcache
+
+# Opcache (production)
+RUN { \
+  echo 'opcache.enable=1'; \
+  echo 'opcache.enable_cli=1'; \
+  echo 'opcache.jit_buffer_size=64M'; \
+  echo 'opcache.memory_consumption=192'; \
+  echo 'opcache.max_accelerated_files=10000'; \
+} > /usr/local/etc/php/conf.d/opcache.ini
+
+WORKDIR /var/www
+
+# Copy app code
+COPY . /var/www
+
+# Copy vendor from composer stage
+COPY --from=vendor /app/vendor /var/www/vendor
+
+# Nginx config (simple, serves Laravel public/ and proxies PHP)
+RUN set -eux; \
+  rm -f /etc/nginx/sites-enabled/default /etc/nginx/conf.d/*; \
+  printf '%s\n' \
+  'server {' \
+  '  listen 80 default_server;' \
+  '  server_name _;' \
+  '  root /var/www/public;' \
+  '  index index.php;' \
+  '  client_max_body_size 10m;' \
+  '  location / {' \
+  '    try_files $uri $uri/ /index.php?$query_string;' \
+  '  }' \
+  '  location ~ \.php$ {' \
+  '    include snippets/fastcgi-php.conf;' \
+  '    fastcgi_pass 127.0.0.1:9000;' \
+  '  }' \
+  '  location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2)$ {' \
+  '    expires 7d;' \
+  '    access_log off;' \
+  '  }' \
+  '}' \
+  > /etc/nginx/conf.d/laravel.conf
+
+# Supervisor config to run php-fpm + nginx together
+RUN printf '%s\n' \
+  '[supervisord]' \
+  'nodaemon=true' \
+  '' \
+  '[program:php-fpm]' \
+  'command=/usr/local/sbin/php-fpm -F' \
+  'autostart=true' \
+  'autorestart=true' \
+  '' \
+  '[program:nginx]' \
+  'command=/usr/sbin/nginx -g "daemon off;"' \
+  'autostart=true' \
+  'autorestart=true' \
+  > /etc/supervisor/conf.d/supervisord.conf
+
+# Permissions (storage + cache writable)
+RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+
+# Minimal production env (override at runtime)
+ENV APP_ENV=production \
+    APP_DEBUG=false \
+    LOG_CHANNEL=stderr
+
+EXPOSE 80
+
+# Health: php-fpm listens on 9000 internally; nginx exposes :80
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
